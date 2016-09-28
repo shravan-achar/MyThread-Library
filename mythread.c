@@ -51,9 +51,9 @@ void MyThreadInit (void(*start_funct)(void *), void *args)
 
 	running_node = malloc(sizeof(node));
 	memset(running_node, 0, sizeof(node));
-	running_node->uc = running;
 
 	MyThreadCreate(start_funct, args);
+	running_node->uc = running;
 	if (!isEmpty(readyq)) {
 		running_node = dequeue(readyq);
 		running = running_node->uc;
@@ -134,6 +134,7 @@ running_node->uc->st = BLOCKED;
 running_node = dequeue(readyq);
 
 /*Check if ready queue is NULL*/
+/* Ideally should cleanup blocked threads*/
 if (running_node == 0) exit(EXIT_SUCCESS);
 
 /*If it is not NULL, assign running to the newly dequeued*/ 
@@ -154,7 +155,7 @@ if (running->num_child == 0) {
 	return;
 }
 
-/* TODO: Perform Memory cleanup before exiting */
+/* TODO: Perform Blocked queue Memory cleanup before exiting */
 if (isEmpty(readyq) == TRUE) exit(EXIT_SUCCESS);
 
 /* readyq is not empty and atleast one child is alive but could 
@@ -183,7 +184,7 @@ if (running->uc.uc_stack.ss_sp) free(running->uc.uc_stack.ss_sp);
 memset(&(running->uc), 0, sizeof(ucontext_t));
 running->st = TERMINATED;
 
-if (par == 0) {
+if (par == 0 || par->uc == 0) {
 	/* Parent has terminated already*/
 	goto enq;
 }
@@ -217,6 +218,7 @@ enq:
 /* Cleanup queue node*/
 /*Pointer to parent node was saved earlier*/
 free(running_node);
+/*TODO: Cleanup thread memory in blocked queue*/
 if (isEmpty(readyq)) exit(EXIT_SUCCESS);
 running_node = dequeue(readyq);
 running = running_node->uc;

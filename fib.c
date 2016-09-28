@@ -52,7 +52,7 @@ void fib(void *in)
     *n = n1 + n2;
   }
 
-
+MyThreadExit();
 }
 
 main(int argc, char **argv)
@@ -72,5 +72,6 @@ main(int argc, char **argv)
   printf("fib(%d) = ", n);
   MyThreadInitExtra(fib, (void*)&n);
   printf("%d\n", n);
+  MyThreadExit();
 }
 
