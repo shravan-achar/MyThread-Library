@@ -1,7 +1,42 @@
 #include "thread.h"
 #include "mythread.h"
+#include "mythreadextra.h"
 
-void MyThreadInitExtra(void(*start_func)(void *), void *args)
+void MyThreadInitExtra(void) 
+{
+
+	ucontext_t *gd, *gc = 0;
+	blockedq = build_queue();
+	readyq = build_queue();
+	running = 0;
+        id_counter = 0;
+
+	running_node = malloc(sizeof(node));
+	memset(running_node, 0, sizeof(node));
+	grand_daddy = malloc(sizeof(ctx_t));
+	if (grand_daddy == 0) handle_error("malloc");
+	memset(grand_daddy, 0, sizeof(ctx_t));
+
+	getcontext(&(grand_daddy->uc));
+
+	garbage_collector = malloc(sizeof(ctx_t));
+	if (garbage_collector == 0) handle_error("malloc");
+	memset(garbage_collector, 0, sizeof(ctx_t));
+
+	getcontext(&(garbage_collector->uc));
+	gc = &(garbage_collector->uc);
+	gc->uc_link = 0; /* No successor context. Believe this is necessary for extra credit*/
+	gc->uc_stack.ss_sp = malloc (STACK_SIZE);
+	if (gc->uc_stack.ss_sp == 0) handle_error("malloc"); 
+	gc->uc_stack.ss_size = STACK_SIZE;
+	gc->uc_stack.ss_flags = 0;
+	makecontext(gc, MyThreadExit, 0);
+
+	running = grand_daddy;
+	running_node->uc = running;
+}
+
+void MyThreadInit(void(*start_func)(void *), void *args)
 {
 	ucontext_t * gd, * gc = 0;
         MyThread main = 0;
@@ -10,6 +45,7 @@ void MyThreadInitExtra(void(*start_func)(void *), void *args)
 	blockedq = build_queue();
 	readyq = build_queue();
 	running = 0;
+        id_counter = 0;
 
 	running_node = malloc(sizeof(node));
 	memset(running_node, 0, sizeof(node));
@@ -31,7 +67,7 @@ void MyThreadInitExtra(void(*start_func)(void *), void *args)
 	if (gc->uc_stack.ss_sp == 0) handle_error("malloc"); 
 	gc->uc_stack.ss_size = STACK_SIZE;
 	gc->uc_stack.ss_flags = 0;
-	makecontext(gc, MyThreadExit, 1, args);
+	makecontext(gc, MyThreadExit, 0);
 
 	gd = &(grand_daddy->uc);
         running = grand_daddy;
@@ -41,43 +77,23 @@ void MyThreadInitExtra(void(*start_func)(void *), void *args)
 
 }
 
-
-void MyThreadInit (void(*start_funct)(void *), void *args)
-{
-	/*Initialize all queues*/
-	blockedq = build_queue();
-	readyq = build_queue();
-	running = 0;
-
-	running_node = malloc(sizeof(node));
-	memset(running_node, 0, sizeof(node));
-
-	MyThreadCreate(start_funct, args);
-	running_node->uc = running;
-	if (!isEmpty(readyq)) {
-		running_node = dequeue(readyq);
-		running = running_node->uc;
-		setcontext(&(running->uc));
-	}
-}
-
 MyThread MyThreadCreate(void(*start_func)(void *), void *args)
 {
 	/* Create a new thread and gets queued in the ready queue */
 	/*Get current context*/
 	ctx_t * current;
-	node * n = malloc(sizeof(node));
-	if (n == 0) handle_error("queue malloc"); 
+	node * n = calloc(1, sizeof(node));
+	if (n == 0) handle_error("queue calloc"); 
 	ucontext_t  * cur;
-	current = malloc(sizeof(ctx_t));
-	if (current == 0) handle_error("ctx malloc");
+	current = calloc(1, sizeof(ctx_t));
+	if (current == 0) handle_error("ctx calloc");
 	memset(current, 0, sizeof(ctx_t));
 	getcontext(&(current->uc));
 	cur = &(current->uc);
 
 	cur->uc_link = &(garbage_collector->uc);
-	cur->uc_stack.ss_sp = malloc(STACK_SIZE);
-	if (cur->uc_stack.ss_sp == 0) handle_error("malloc"); 
+	cur->uc_stack.ss_sp = calloc(1, STACK_SIZE);
+	if (cur->uc_stack.ss_sp == 0) handle_error("calloc"); 
 	cur->uc_stack.ss_size = STACK_SIZE;
 	cur->uc_stack.ss_flags = 0;
 	makecontext(cur, start_func, 1, args);
@@ -154,7 +170,6 @@ if (running->num_child == 0) {
 /* No children are alive so return*/
 	return;
 }
-
 /* TODO: Perform Blocked queue Memory cleanup before exiting */
 if (isEmpty(readyq) == TRUE) exit(EXIT_SUCCESS);
 

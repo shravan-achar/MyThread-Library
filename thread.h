@@ -51,6 +51,15 @@ typedef struct _queue {
     int size;
 } queue;
 
+typedef struct _mysem {
+    int sem_id;
+    queue *bsemq;
+    int max_value;
+    int value;
+} mysem; 
+
+int id_counter;
+
 queue *build_queue();
 void delete_queue(queue *q);
 int enqueue(queue *q, node *item);

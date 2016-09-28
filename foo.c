@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <ucontext.h>
 #include "mythread.h"
+#include "mythreadextra.h"
 
 static ucontext_t ctx[3];
 
@@ -87,5 +88,6 @@ void f0(void* args)
 
 int main()
 {
-	MyThreadInitExtra(f0,0);
+	MyThreadInitExtra();
+        f0(0);
 }
