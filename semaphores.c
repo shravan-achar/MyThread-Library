@@ -5,31 +5,33 @@
 MySemaphore MySemaphoreInit(int initialValue)
 {
 	mysem * sem = calloc(1, sizeof(mysem));
-	sem->sem_id = id_counter++; 
-        sem->bsemq = build_queue();
-        if (sem->bsemq == 0) handle_error("malloc");
-        sem->max_value = initialValue;
-	sem->value = initialValue;
-	return sem;
+	if (initialValue > -1) {
+		sem->sem_id = id_counter++; 
+		sem->bsemq = build_queue();
+		if (sem->bsemq == 0) handle_error("malloc");
+		sem->max_value = initialValue;
+		sem->value = initialValue;
+		return sem;
+	} else return NULL;
 }
 
 void MySemaphoreSignal(MySemaphore sem)
 {
 
 mysem * ms = (mysem *) sem;
-if(ms->value <= 0) { /* Can just be equal to */
+if(isEmpty(ms->bsemq)) { /* Can just be equal to */
+	/*Blocked queue is empty if value > 0*/
+	ms->value++;
+} else {
 	/* Unblock thread and put in ready queue*/
 	assert(running != 0);
-	if (isEmpty(ms->bsemq)) {
+	/*if (isEmpty(ms->bsemq)) {
 		ms->value++; 
-                return;
-	}
+		return;
+	}*/
 	node * p = dequeue(ms->bsemq);
 	p->uc->st = READY;
 	enqueue(readyq, p);
-} else {
-	/*Blocked queue is empty if value > 0*/
-	ms->value++;
 }        
 }
 
@@ -37,7 +39,10 @@ void MySemaphoreWait(MySemaphore sem)
 {
 
 	mysem * ms = (mysem *) sem;
-	if (ms->value <= 0) { /* Can just be equal to */
+	if (ms->value > 0) { /* Can just be equal to */
+		/* Semaphore available if value > 0 */
+		ms->value--;
+	} else {
 		/* Put the invoking thread to semaphore block queue*/
 		assert (running != 0);
 		ctx_t * current = running;
@@ -47,9 +52,6 @@ void MySemaphoreWait(MySemaphore sem)
 		running_node = dequeue(readyq);
                 running = running_node->uc;
 		swapcontext(&(current->uc), &(running->uc));
-	} else {
-		/* Semaphore available if value > 0 */
-		ms->value--;
 
 	}
 }

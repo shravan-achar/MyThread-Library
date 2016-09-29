@@ -18,7 +18,7 @@ void f0(void *args)
 int main()
 {
         MyThreadInitExtra();
-        sem = MySemaphoreInit(1);
+        sem = MySemaphoreInit(2);
         int n1=1,n2=2,n3=3,n4=4;
         
         //MySemaphoreWait(sem);

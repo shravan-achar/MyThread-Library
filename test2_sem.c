@@ -36,7 +36,7 @@ void t2(void *d) {
 void t4(void *d) {
     printf("t4\n");
 }
-
+/*
 void t3(void *d) {
     printf("t3 Waiting for sem1\n");
     MySemaphoreWait(sem1);
@@ -49,17 +49,16 @@ void t3(void *d) {
     printf("t3 end\n");
 
 }
-
+*/
 void t0(void * dummy)
 {
   printf("t0 start\n");
   sem1 = MySemaphoreInit(1);
   sem2 = MySemaphoreInit(1);
   MyThreadCreate(t1, dummy);
-  MyThreadCreate(t3, dummy);
+ // MyThreadCreate(t3, dummy);
   MyThreadCreate(t2, dummy);
   MyThreadJoinAll();
-  MyThreadExit();
 }
 
 int main()

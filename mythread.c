@@ -74,6 +74,11 @@ void MyThreadInit(void(*start_func)(void *), void *args)
 	running_node->uc = running;
 	main = MyThreadCreate(start_func, args);
         MyThreadJoin(main);
+        if (!isEmpty(readyq)) {
+           running_node = dequeue(readyq);
+           running = running_node->uc;
+           swapcontext(&(grand_daddy->uc), &(running->uc));  
+	}
 
 }
 
@@ -116,9 +121,15 @@ void MyThreadYield(void)
 	assert (running != 0);
 	ctx_t * temp = running;
 	enqueue(readyq, running_node);
-	running_node = dequeue(readyq);
+	node * p = dequeue(readyq);
+	if (p == running_node) {
+		running = p->uc;
+		return;
+	} else {
+		running_node = p;
+	}
 	running = running_node->uc;
-	switch_context(temp, running_node->uc);
+	swapcontext(&(temp->uc), &(running->uc));
 }
 
 int MyThreadJoin(MyThread thread)
@@ -170,7 +181,6 @@ if (running->num_child == 0) {
 /* No children are alive so return*/
 	return;
 }
-/* TODO: Perform Blocked queue Memory cleanup before exiting */
 if (isEmpty(readyq) == TRUE) exit(EXIT_SUCCESS);
 
 /* readyq is not empty and atleast one child is alive but could 
@@ -184,7 +194,7 @@ running = running_node->uc;
 
 /*Save current context in temp and switch to newly dequeued one*/
 running_node->uc->st = RUN;
-switch_context(temp, running_node->uc);
+swapcontext(&(temp->uc), &(running->uc));
 }
 
 void MyThreadExit(void)
@@ -215,7 +225,7 @@ if (running->is_par_waiting) {
 	}
 } else {
 	/* is_par_waiting is not set. But parent could be waiting on a joinall */
-	/* Decrement number of children*/	
+/* Decrement number of children*/	
 	par->uc->num_child--;
 
 	if (par->uc->st == BLOCKED) {
