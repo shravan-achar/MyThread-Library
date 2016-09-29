@@ -1,0 +1,5 @@
+queue implementation:
+Based on : https://gist.github.com/ArnonEilat/4471278
+
+User level threads:
+Portable Multithreading: The Signal Stack Trick for User Level Thread Creation, Ralf.S.Engelschall 
